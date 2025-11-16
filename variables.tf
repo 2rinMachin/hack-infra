@@ -19,3 +19,15 @@ variable "domain" {
   type        = string
   description = "Domain to use for SSL certificates"
 }
+
+
+variable "frontend_repo" {
+  type        = string
+  description = "Repository URL for the frontend"
+  default     = "https://github.com/2rinMachin/hack-front"
+}
+
+variable "github_token" {
+  type        = string
+  description = "GitHub access token for the frontend"
+}
