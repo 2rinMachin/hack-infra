@@ -10,8 +10,9 @@ resource "aws_amplify_app" "frontend" {
   oauth_token = var.github_token
 
   environment_variables = {
-    VITE_USERS_URL  = "https://tdrbg4mzsd.execute-api.us-east-1.amazonaws.com/dev"
-    VITE_PUBLIC_URL = "https://incidentec.${var.domain}"
+    VITE_USERS_URL     = var.users_api_url
+    VITE_INCIDENTS_URL = var.incidents_api_url
+    VITE_PUBLIC_URL    = "https://incidentec.${var.domain}"
   }
 
   custom_rule {
