@@ -31,3 +31,15 @@ variable "github_token" {
   type        = string
   description = "GitHub access token for the frontend"
 }
+
+variable "users_api_url" {
+  type = string
+}
+
+variable "incidents_api_url" {
+  type = string
+}
+
+variable "images_bucket_name" {
+  type = string
+}
