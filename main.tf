@@ -2,202 +2,121 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "aws_lambda_function" "start_order_execution" {
-  function_name = "pc-orders-dev-start_order_execution"
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+
+  owners = ["099720109477"]
 }
 
-data "aws_lambda_function" "put_order_task_token" {
-  function_name = "pc-orders-dev-put_order_task_token"
+resource "aws_security_group" "apache_airflow" {
+  name        = "hack-aa-sg"
+  description = "Security groups for the Apache Airflow VM"
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP 8080"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP 8081"
+    from_port   = 8081
+    to_port     = 8081
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP 8005"
+    from_port   = 8005
+    to_port     = 8005
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
-data "aws_lambda_function" "resume_order_workflow" {
-  function_name = "pc-orders-dev-resume_order_workflow"
-}
+resource "aws_instance" "apache_airflow" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t2.large"
+  key_name               = var.ec2_key_name
+  vpc_security_group_ids = [aws_security_group.apache_airflow.id]
 
-data "aws_lambda_function" "broadcast_order_create" {
-  function_name = "pc-orders-dev-broadcast_order_create"
-}
+  root_block_device {
+    volume_size           = 20
+    volume_type           = "gp3"
+    delete_on_termination = true
+  }
 
-data "aws_lambda_function" "broadcast_order_status" {
-  function_name = "pc-orders-dev-broadcast_order_status"
-}
-
-resource "aws_dynamodb_table" "restaurants" {
-  name         = "pc-users-restaurants"
-  billing_mode = "PAY_PER_REQUEST"
-
-  hash_key = "tenant_id"
-
-  attribute {
-    name = "tenant_id"
-    type = "S"
+  tags = {
+    Name = "Apache Airflow VM"
   }
 }
 
 resource "aws_dynamodb_table" "users" {
-  name         = "pc-users-users"
+  name         = "hack-users"
   billing_mode = "PAY_PER_REQUEST"
 
-  hash_key  = "tenant_id"
-  range_key = "user_id"
+  hash_key = "id"
 
   attribute {
-    name = "tenant_id"
+    name = "id"
     type = "S"
   }
 
   attribute {
-    name = "user_id"
+    name = "email"
     type = "S"
   }
 
   attribute {
-    name = "status"
+    name = "username"
     type = "S"
+  }
+
+
+  global_secondary_index {
+    name            = "email-idx"
+    hash_key        = "email"
+    projection_type = "ALL"
   }
 
   global_secondary_index {
-    name            = "status-index"
-    hash_key        = "tenant_id"
-    range_key       = "status"
+    name            = "username-idx"
+    hash_key        = "username"
     projection_type = "ALL"
   }
 }
 
-resource "aws_dynamodb_table" "orders" {
-  name         = "pc-orders"
+resource "aws_dynamodb_table" "incidents" {
+  name         = "hack-incidents"
   billing_mode = "PAY_PER_REQUEST"
 
-  hash_key  = "tenant_id"
-  range_key = "order_id"
+  hash_key = "id"
 
   attribute {
-    name = "tenant_id"
+    name = "id"
     type = "S"
   }
-
-  attribute {
-    name = "order_id"
-    type = "S"
-  }
-}
-
-resource "aws_dynamodb_table" "order_subscriptions" {
-  name         = "pc-order-subscriptions"
-  billing_mode = "PAY_PER_REQUEST"
-
-  hash_key  = "tenant_id"
-  range_key = "connection_id"
-
-  attribute {
-    name = "tenant_id"
-    type = "S"
-  }
-
-  attribute {
-    name = "connection_id"
-    type = "S"
-  }
-
-  global_secondary_index {
-    name            = "connection-id-index"
-    hash_key        = "connection_id"
-    projection_type = "ALL"
-  }
-}
-
-locals {
-  order_state_names = [
-    "WaitForCook",
-    "Cooking",
-    "WaitForDispatcher",
-    "Dispatching",
-    "WaitForDeliverer",
-    "Delivering",
-    "Complete"
-  ]
-
-  order_states = {
-    for i, name in local.order_state_names :
-    name => {
-      Type     = "Task"
-      Resource = "arn:aws:states:::lambda:invoke.waitForTaskToken"
-      Parameters = {
-        FunctionName = data.aws_lambda_function.put_order_task_token.function_name
-        Payload = {
-          "tenant_id.$" : "$.detail.tenant_id"
-          "order_id.$" : "$.detail.order_id"
-          "task_token.$" : "$$.Task.Token"
-        }
-      }
-      Next = i < length(local.order_state_names) - 1 ? local.order_state_names[i + 1] : "FinalStep"
-    }
-  }
-}
-
-resource "aws_sfn_state_machine" "order_workflow" {
-  name     = "pc-order-workflow"
-  role_arn = var.labrole_arn
-
-  definition = jsonencode({
-    StartAt = "WaitForCook"
-    States = merge(local.order_states, {
-      FinalStep = {
-        Type = "Pass"
-        End  = true
-      }
-    })
-  })
-}
-
-resource "aws_cloudwatch_event_rule" "order_created" {
-  name = "pc-order-created"
-
-  event_pattern = jsonencode({
-    source      = ["pc.orders"],
-    detail-type = ["order.created"]
-  })
-}
-
-resource "aws_cloudwatch_event_target" "start_order_execution" {
-  target_id = "pc-order-created"
-  rule      = aws_cloudwatch_event_rule.order_created.name
-  arn       = data.aws_lambda_function.start_order_execution.arn
-
-  role_arn = var.labrole_arn
-}
-
-resource "aws_cloudwatch_event_target" "broadcast_order_create" {
-  target_id = "pc-order-created"
-  rule      = aws_cloudwatch_event_rule.order_created.name
-  arn       = data.aws_lambda_function.broadcast_order_create.arn
-
-  role_arn = var.labrole_arn
-}
-
-resource "aws_cloudwatch_event_rule" "order_status_updated" {
-  name = "pc-order-status-updated"
-
-  event_pattern = jsonencode({
-    source      = ["pc.orders"],
-    detail-type = ["order.status_update"],
-  })
-}
-
-resource "aws_cloudwatch_event_target" "resume_order_workflow" {
-  target_id  = "pc-resume-order-workflow"
-  rule       = aws_cloudwatch_event_rule.order_status_updated.name
-  arn        = data.aws_lambda_function.resume_order_workflow.arn
-  input_path = "$"
-
-  role_arn = var.labrole_arn
-}
-
-resource "aws_cloudwatch_event_target" "broadcast_order_status" {
-  target_id  = "pc-broadcast-order-status"
-  rule       = aws_cloudwatch_event_rule.order_status_updated.name
-  arn        = data.aws_lambda_function.broadcast_order_status.arn
-  input_path = "$"
-
-  role_arn = var.labrole_arn
 }
