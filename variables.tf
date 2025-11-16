@@ -40,6 +40,10 @@ variable "incidents_api_url" {
   type = string
 }
 
+variable "websocket_url" {
+  type = string
+}
+
 variable "images_bucket_name" {
   type = string
 }

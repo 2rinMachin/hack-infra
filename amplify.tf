@@ -12,6 +12,7 @@ resource "aws_amplify_app" "frontend" {
   environment_variables = {
     VITE_USERS_URL     = var.users_api_url
     VITE_INCIDENTS_URL = var.incidents_api_url
+    VITE_WEBSOCKET_URL = var.websocket_url
     VITE_PUBLIC_URL    = "https://incidentec.${var.domain}"
   }
 
