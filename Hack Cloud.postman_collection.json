@@ -1,0 +1,328 @@
+{
+	"info": {
+		"_postman_id": "794c8e5c-fc82-4b43-9533-9befc378f205",
+		"name": "Hack Cloud",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43480626",
+		"_collection_link": "https://planetary-escape-1391844.postman.co/workspace/Jos%C3%A9-Grayson's-Workspace~c4bc84d3-04dd-4b1c-8d8a-76d19da3f965/collection/43480626-794c8e5c-fc82-4b43-9533-9befc378f205?action=share&source=collection_link&creator=43480626"
+	},
+	"item": [
+		{
+			"name": "Incidents",
+			"item": [
+				{
+					"name": "Get all incidents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{incidentsUrl}}/incidents",
+							"host": [
+								"{{incidentsUrl}}"
+							],
+							"path": [
+								"incidents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get incident by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{incidentsUrl}}/incidents/{{incidentId}}",
+							"host": [
+								"{{incidentsUrl}}"
+							],
+							"path": [
+								"incidents",
+								"{{incidentId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create incident",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code >= 200 && pm.response.code < 300) {",
+									"    const data = pm.response.json();",
+									"    pm.collectionVariables.set('incidentId', data.id);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"kind\": \"plagiarism\",\n    \"description\": \"Me copiaron la tarea!!\",\n    \"location\": \"Alua A601\",\n    \"urgency\": \"high\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{incidentsUrl}}/incidents",
+							"host": [
+								"{{incidentsUrl}}"
+							],
+							"path": [
+								"incidents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update incident status",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"id\": \"{{incidentId}}\",\n    \"status\": \"done\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{incidentsUrl}}/incidents/{{incidentId}}/status",
+							"host": [
+								"{{incidentsUrl}}"
+							],
+							"path": [
+								"incidents",
+								"{{incidentId}}",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscribe email",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"josedanielgrayson@proton.me\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{incidentsUrl}}/subscribe/email",
+							"host": [
+								"{{incidentsUrl}}"
+							],
+							"path": [
+								"subscribe",
+								"email"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscribe SMS",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sms\": \"51926900706\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{incidentsUrl}}/subscribe/sms",
+							"host": [
+								"{{incidentsUrl}}"
+							],
+							"path": [
+								"subscribe",
+								"sms"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"pepe@proton.me\",\n    \"username\": \"jdgtt\",\n    \"password\": \"123\",\n    \"role\": \"staff\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{users_url}}/auth/register",
+							"host": [
+								"{{users_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Log in",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code >= 200 && pm.response.code < 300) {",
+									"    const data = pm.response.json();",
+									"    pm.collectionVariables.set('sessionToken', data.token);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"josedanielgrayson@proton.me\",\n    \"password\": \"12345678\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{users_url}}/auth/login",
+							"host": [
+								"{{users_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get self",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{users_url}}/users/self",
+							"host": [
+								"{{users_url}}"
+							],
+							"path": [
+								"users",
+								"self"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cuando haces tus momos por Postman: Eso Postmailn",
+			"request": {
+				"method": "GET",
+				"header": []
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{sessionToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "users_url",
+			"value": ""
+		},
+		{
+			"key": "sessionToken",
+			"value": ""
+		},
+		{
+			"key": "incidentsUrl",
+			"value": ""
+		},
+		{
+			"key": "incidentId",
+			"value": ""
+		}
+	]
+}
